@@ -574,6 +574,110 @@
 		echo getHTML('header.php');
 		echo getHTML('columnfamily_insert_edit_row.php',$vw_vars);
 	}
+
+        /*
+		Merge CF with JSON data
+	*/
+        
+	if ($action == 'merge_cf_with_json_data') {
+		$is_valid_action = true;
+	
+		$keyspace_name = '';
+		if (isset($_GET['keyspace_name'])) {
+			$keyspace_name = $_GET['keyspace_name'];
+		}
+		
+		$columnfamily_name = '';
+		if (isset($_GET['columnfamily_name'])) {
+			$columnfamily_name = $_GET['columnfamily_name'];
+		}
+		
+		$vw_vars['cluster_name'] = $sys_manager->describe_cluster_name();
+		$vw_vars['keyspace_name'] = $keyspace_name;
+		$vw_vars['columnfamily_name'] = $columnfamily_name;
+		
+		if (!isset($vw_vars['success_message'])) $vw_vars['success_message'] = '';
+		if (!isset($vw_vars['info_message'])) $vw_vars['info_message'] = '';
+		if (!isset($vw_vars['error_message'])) $vw_vars['error_message'] = '';
+		
+		$cf_def = ColumnFamilyHelper::getCFInKeyspace($keyspace_name,$columnfamily_name);
+		$vw_vars['is_super_cf'] = $cf_def->column_type == 'Super';
+		
+		$vw_vars['key'] = '';
+		$vw_vars['mode'] = 'insert';
+		$vw_vars['super_key'] = '';
+		
+		$current_page_title = 'Cassandra Cluster Admin > '.$keyspace_name.' > '.$columnfamily_name.' > Insert a Row';
+		
+		$included_header = true;
+		echo getHTML('header.php');
+		echo getHTML('columnfamily_merge_with_json.php',$vw_vars);
+	}
+
+        /*
+		Submit form of merge cf with JSON data
+	*/
+	
+	if (isset($_POST['btn_merge_cf_with_json_data'])) {
+		$keyspace_name = '';
+		if (isset($_GET['keyspace_name'])) {
+			$keyspace_name = $_GET['keyspace_name'];
+		}
+		
+		$columnfamily_name = '';
+		if (isset($_GET['columnfamily_name'])) {
+			$columnfamily_name = $_GET['columnfamily_name'];
+		}
+		
+                $jsondata = $_POST['jsondata'];
+                $json_out = json_decode($jsondata,true);
+                
+                //echo "<pre>"; print_r($json_out); echo "</pre>";
+                echo "<pre>";
+                
+                
+		$key = $_POST['key'];
+		
+		$pool = new ConnectionPool($keyspace_name, $cluster_helper->getArrayOfNodesForCurrentCluster(),null,5,5000,5000,10000,$cluster_helper->getCredentialsForCurrentCluster());
+		$column_family = new ColumnFamily($pool, $columnfamily_name);
+		
+		$no_column = 1;
+		
+		$data = array();
+		
+                
+                
+		$is_super_cf = $_POST['is_super_cf'];
+                
+                try {
+                $time_start = microtime(true);
+                if ($is_super_cf!="")  {    //supercolumn family data merge , should check if required data level is there
+                    
+		
+                    foreach ($json_out as $rowkey=>$rowdata) {
+                        echo "Adding SuperColumnFamily row $rowkey\n";
+                        print_r($rowdata);
+                        $column_family->insert($rowkey,$rowdata);
+                    }  
+                    
+                }                    
+                else {    //no supercolumn for this cf family
+                    foreach ($json_out as $rowkey=>$rowdata) {
+                        echo "Adding row $rowkey\n";
+                        print_r($rowdata);
+                        $column_family->insert($rowkey,$rowdata);
+                    }
+                }
+                echo "</pre>";
+                $time_end = microtime(true);
+                $vw_vars['success_message'] = displaySuccessMessage('insert_row',array('query_time' => getQueryTime($time_start,$time_end)));
+                }
+                catch (Exception $e) {
+			$vw_vars['error_message'] = displayErrormessage('insert_row',array('message' => $e->getMessage()));
+		}
+                                
+	}
+
 	
 	/*
 		Truncate column family
@@ -932,6 +1036,11 @@
 //		echo getHTML('header.php');
 //		echo getHTML('columnfamily_insert_edit_row.php',$vw_vars);
 	}
+        
+        /*
+		Dump CF as JSON data 
+               * rough version, using browse_data code with 'higher' row limit  
+	*/
 
 	if ($action == 'dump_cf_as_json') {
 		$is_valid_action = true;

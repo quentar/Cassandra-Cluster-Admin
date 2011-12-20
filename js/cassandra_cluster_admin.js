@@ -19,6 +19,12 @@ function dumpColumnFamilyAsJSON(keyspace_name,columnfamily_name) {
 	return false;
 }
 
+function mergeColumnFamilyWithJSON(keyspace_name,columnfamily_name) {
+		location.href = 'columnfamily_action.php?action=merge_cf_with_json_data&keyspace_name=' + keyspace_name + '&columnfamily_name=' + columnfamily_name;
+	return false;
+}
+
+
 function truncateColumnFamily(keyspace_name,columnfamily_name) {
 	if (confirm('Are you sure you want to truncate (delete all data) the column family ' + columnfamily_name + ' of the keyspace ' + keyspace_name + '?')) {
 		location.href = 'columnfamily_action.php?action=truncate&keyspace_name=' + keyspace_name + '&columnfamily_name=' + columnfamily_name;

@@ -43,6 +43,11 @@
 		<div class="menu_item" onclick="return dumpColumnFamilyAsJSON('<?php echo $keyspace_name; ?>','<?php echo $columnfamily_name; ?>');">
 			<div class="icon dump_column_family"></div> Dump as JSON
 		</div>
+
+		<div class="menu_item" onclick="return mergeColumnFamilyWithJSON('<?php echo $keyspace_name; ?>','<?php echo $columnfamily_name; ?>');">
+			<div class="icon mergedata_column_family"></div> Merge with JSON data
+		</div>
+
 	<?php endif; ?>
 	
 	<div class="clear_left"></div>
