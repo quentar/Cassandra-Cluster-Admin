@@ -39,6 +39,10 @@
 		<div class="menu_item" onclick="return dropColumnFamily('<?php echo $keyspace_name; ?>','<?php echo $columnfamily_name; ?>');">
 			<div class="icon drop_column_family"></div> Drop Column Family
 		</div>
+		
+		<div class="menu_item" onclick="return dumpColumnFamilyAsJSON('<?php echo $keyspace_name; ?>','<?php echo $columnfamily_name; ?>');">
+			<div class="icon dump_column_family"></div> Dump as JSON
+		</div>
 	<?php endif; ?>
 	
 	<div class="clear_left"></div>

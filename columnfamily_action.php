@@ -933,6 +933,162 @@
 //		echo getHTML('columnfamily_insert_edit_row.php',$vw_vars);
 	}
 
+	if ($action == 'dump_cf_as_json') {
+		$is_valid_action = true;
+	
+		$keyspace_name = '';
+		if (isset($_GET['keyspace_name'])) {
+			$keyspace_name = $_GET['keyspace_name'];
+		}
+		
+		$columnfamily_name = '';
+		if (isset($_GET['columnfamily_name'])) {
+			$columnfamily_name = $_GET['columnfamily_name'];
+		}
+		
+		$vw_vars['cluster_name'] = $sys_manager->describe_cluster_name();
+		$vw_vars['keyspace_name'] = $keyspace_name;
+		$vw_vars['columnfamily_name'] = $columnfamily_name;
+				
+		try {		
+			$pool = new ConnectionPool($keyspace_name, $cluster_helper->getArrayOfNodesForCurrentCluster(),null,5,5000,5000,10000,$cluster_helper->getCredentialsForCurrentCluster());
+			$column_family = new ColumnFamily($pool, $columnfamily_name);
+		
+			// Increment counter
+			if (isset($_GET['increment'])) {
+				$row_key = $_GET['row_key'];
+				$column = $_GET['column'];
+				
+				$super_column = null;
+				if (isset($_GET['super_column'])) $super_column = $_GET['super_column'];
+				
+				$column_family->add($row_key, $column, 1,$super_column);
+			}
+			
+			// Decrement counter
+			if (isset($_GET['decrement'])) {
+				$row_key = $_GET['row_key'];
+				$column = $_GET['column'];
+				
+				$super_column = null;
+				if (isset($_GET['super_column'])) $super_column = $_GET['super_column'];
+				
+				$column_family->add($row_key, $column, -1,$super_column);
+			}
+		
+			$offset_key = '';
+					
+			if (isset($_GET['pos']) && $_GET['pos'] == 'prev' && isset($_SESSION['browse_data_offset_key']) && is_array($_SESSION['browse_data_offset_key'])) {
+				if (count($_SESSION['browse_data_offset_key']) > 1) {
+					array_pop($_SESSION['browse_data_offset_key']);
+				}
+				
+				$offset_key = array_pop($_SESSION['browse_data_offset_key']);
+			}			
+			elseif (isset($_GET['offset_key'])) {
+				$offset_key = $_GET['offset_key'];
+			}
+			
+			$vw_vars['current_offset_key'] = $offset_key;
+		
+			if ($offset_key == '') {
+				$_SESSION['browse_data_offset_key'] = array();
+				$_SESSION['browse_data_offset_key'][] = '';
+			}
+			else {
+				if (!isset($_SESSION['browse_data_offset_key']) || !is_array($_SESSION['browse_data_offset_key'])) {
+					$_SESSION['browse_data_offset_key'] = array();
+				}
+				
+				$pos = '';
+				if (isset($_GET['pos'])) $pos = $_GET['pos'];
+				
+				// Make sure it's not only a refresh of the page AND a previous click
+				if (end($_SESSION['browse_data_offset_key']) != $offset_key && $pos != 'prev') {
+					$_SESSION['browse_data_offset_key'][] = $offset_key;
+					
+					// Don't keep more then 100 previous key
+					//if (count($_SESSION['browse_data_offset_key']) > 100) {
+					//	array_shift($_SESSION['browse_data_offset_key']);
+					//}
+				}
+			}
+				
+			$nb_rows = 10000000 ;
+			if (isset($_GET['nb_rows']) && is_numeric($_GET['nb_rows']) && $_GET['nb_rows'] > 0) $nb_rows = $_GET['nb_rows'];
+			$vw_vars['nb_rows'] = $nb_rows;
+		
+			$describe_keyspace = $sys_manager->describe_keyspace($keyspace_name);
+		
+			$cf_def = null;
+			foreach ($describe_keyspace->cf_defs as $cfdef) {
+				if ($cfdef->name == $columnfamily_name) {
+					$cf_def = $cfdef;
+					break;
+				}
+			}
+
+			$vw_row_vars['is_super_cf'] = $cf_def->column_type == 'Super';     
+			$vw_row_vars['is_counter_column'] = $column_family->cfdef->default_validation_class == 'org.apache.cassandra.db.marshal.CounterColumnType';
+		
+			//$result = $column_family->get_range($offset_key,'',$nb_rows);		
+			$result = $column_family->get_range($offset_key,'',$nb_rows);		
+			
+			$vw_vars['results'] = '';	
+			$nb_results = 0;
+			        $vw_vars['results']=array();
+			foreach ($result as $key => $value) {
+				$vw_row_vars['key'] = $key;
+				$vw_row_vars['value'] = $value;
+				
+				$vw_row_vars['keyspace_name'] = $keyspace_name;
+				$vw_row_vars['columnfamily_name'] = $columnfamily_name;
+				
+				$vw_row_vars['show_actions_link'] = true;
+				
+				//$vw_vars['results'] .= getHTML('columnfamily_browse_data_row.php',$vw_row_vars);
+				
+				$vw_vars['results'][$vw_row_vars['key']]=$vw_row_vars['value'];  
+				
+				$nb_results++;
+			}		
+			
+			$vw_vars['show_begin_page_link'] = $offset_key != '';
+			$vw_vars['show_prev_page_link'] = $offset_key != '' && count($_SESSION['browse_data_offset_key']) > 0;
+			
+			// We got the number of rows we asked for, display "Next Page" link
+			if ($nb_results == $nb_rows) {				
+				$offset_key = ++$key;				
+				
+				$vw_vars['offset_key'] = $offset_key;
+				$vw_vars['show_next_page_link'] = true;
+			}
+			else {
+				$vw_vars['offset_key'] = '';
+				$vw_vars['show_next_page_link'] = false;
+			}			
+			
+			$current_page_title = 'Cassandra Cluster Admin > '.$keyspace_name.' > '.$columnfamily_name.' > Browse Data';
+			
+			$vw_vars['is_counter_column'] = $vw_row_vars['is_counter_column'];
+			
+			$included_header = true;
+			echo getHTML('header.php');
+			//echo "<pre>";
+			//print_r($vw_vars['results']);
+			$json_out = json_encode($vw_vars['results']);
+			echo $json_out;
+			//echo "</pre>";
+			//echo getHTML('columnfamily_browse_data.php',$vw_vars);
+		}
+		catch (cassandra_NotFoundException $e) {
+			echo displayErrorMessage('columnfamily_doesnt_exists',array('column_name' => $columnfamily_name));
+		}
+		catch (Exception $e) {
+			echo displayErrorMessage('something_wrong_happened',array('message' => $e->getMessage()));
+		}
+	}	
+
 	
 	/*
 		Modify counter
