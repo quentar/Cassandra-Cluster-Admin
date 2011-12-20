@@ -39,4 +39,7 @@
 	define('CCA_PASSWORD','');
 	
 	define('MX4J_HTTP_ADAPTOR_PORT',8081);
+	
+	define('CCA_BROWSE_DATA_ROWS',51);	//default number of rows displayed with browse data function
+	define('CCA_SEARCH_DATA_ROWS',22);	//default number of rows displayed when searching data
 ?>

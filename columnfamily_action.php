@@ -687,7 +687,7 @@
 				}
 			}
 				
-			$nb_rows = 5;
+			$nb_rows = CCA_BROWSE_DATA_ROWS ;
 			if (isset($_GET['nb_rows']) && is_numeric($_GET['nb_rows']) && $_GET['nb_rows'] > 0) $nb_rows = $_GET['nb_rows'];
 			$vw_vars['nb_rows'] = $nb_rows;
 		
