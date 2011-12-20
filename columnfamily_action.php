@@ -862,6 +862,77 @@
 			echo displayErrorMessage('something_wrong_happened',array('message' => $e->getMessage()));
 		}
 	}
+	/*
+		Copy row as json
+	*/
+	if ($action == 'copy_row_as_json') {
+		$is_valid_action = true;
+	
+		$keyspace_name = '';
+		if (isset($_GET['keyspace_name'])) {
+			$keyspace_name = $_GET['keyspace_name'];
+		}
+		
+		$columnfamily_name = '';
+		if (isset($_GET['columnfamily_name'])) {
+			$columnfamily_name = $_GET['columnfamily_name'];
+		}
+		
+		$key = '';
+		if (isset($_GET['key'])) {
+			$key = $_GET['key'];
+		}
+		
+		$super_key = '';
+		if (isset($_GET['super_key'])) {
+			$super_key = $_GET['super_key'];
+		}
+		
+		$vw_vars['cluster_name'] = $sys_manager->describe_cluster_name();
+		$vw_vars['keyspace_name'] = $keyspace_name;
+		$vw_vars['columnfamily_name'] = $columnfamily_name;
+		
+		if (!isset($vw_vars['success_message'])) $vw_vars['success_message'] = '';
+		if (!isset($vw_vars['info_message'])) $vw_vars['info_message'] = '';
+		if (!isset($vw_vars['error_message'])) $vw_vars['error_message'] = '';
+		
+		$cf_def = ColumnFamilyHelper::getCFInKeyspace($keyspace_name,$columnfamily_name);
+		$vw_vars['is_super_cf'] = $cf_def->column_type == 'Super';
+		
+		$vw_vars['key'] = $key;
+		$vw_vars['super_key'] = $super_key;
+		
+		$vw_vars['mode'] = 'edit';
+		
+		try {		
+			$pool = new ConnectionPool($keyspace_name, $cluster_helper->getArrayOfNodesForCurrentCluster(),null,5,5000,5000,10000,$cluster_helper->getCredentialsForCurrentCluster());
+			$column_family = new ColumnFamily($pool, $columnfamily_name);
+			
+			$vw_vars['results'] = '';	
+			$vw_vars['output'] = '';		
+					
+			$output = $column_family->get($key);
+			$vw_vars['output'] = $output;
+		}
+		catch(Exception $e) {
+			echo displayErrorMessage('something_wrong_happened',array('message' => $e->getMessage()));
+		}
+		
+		$current_page_title = 'Cassandra Cluster Admin > '.$keyspace_name.' > '.$columnfamily_name.' > Edit Row';
+		
+		$included_header = true;
+		echo "<pre>";
+		//print_r($vw_vars);
+		$json_out = array();
+		$json_out[$vw_vars['key']] = $vw_vars['output'];
+		//print_r($json_out);
+		$json = json_encode($json_out);
+		echo $json;
+		echo "</pre>";
+//		echo getHTML('header.php');
+//		echo getHTML('columnfamily_insert_edit_row.php',$vw_vars);
+	}
+
 	
 	/*
 		Modify counter

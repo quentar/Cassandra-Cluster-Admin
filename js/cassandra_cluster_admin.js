@@ -30,6 +30,13 @@ function deleteRow(keyspace_name,columnfamily_name,key) {
 	return false;
 }
 
+function copyRowAsJSON(keyspace_name,columnfamily_name,key) {
+		location.href = 'columnfamily_action.php?action=copy_row_as_json&keyspace_name=' + keyspace_name + '&columnfamily_name=' + columnfamily_name + '&key=' + key;
+	
+	return false;
+}
+
+
 function deleteSuperColumn(keyspace_name,columnfamily_name,key,super_column) {
 	if (confirm('Are you sure you want to delete the super column ' + super_column + ' of the row ' + key + '?')) {
 		location.href = 'columnfamily_action.php?action=delete_row&keyspace_name=' + keyspace_name + '&columnfamily_name=' + columnfamily_name + '&key=' + key + '&super_column_key=' + super_column;
