@@ -1123,7 +1123,7 @@
 				}
 			}
 				
-			$nb_rows = 10000000 ;
+			$nb_rows = 10000000 ; //row limit for dump - larger data will be clipped at the moment
 			if (isset($_GET['nb_rows']) && is_numeric($_GET['nb_rows']) && $_GET['nb_rows'] > 0) $nb_rows = $_GET['nb_rows'];
 			$vw_vars['nb_rows'] = $nb_rows;
 		
@@ -1185,8 +1185,11 @@
 			echo getHTML('header.php');
 			//echo "<pre>";
 			//print_r($vw_vars['results']);
-			$json_out = json_encode($vw_vars['results']);
+                        $json_out = json_encode($vw_vars['results']);
+                        echo '<textarea rows="25" cols="150">';
 			echo $json_out;
+                        echo "</textarea>";
+			
 			//echo "</pre>";
 			//echo getHTML('columnfamily_browse_data.php',$vw_vars);
 		}
